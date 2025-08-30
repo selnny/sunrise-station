@@ -398,7 +398,7 @@ public abstract partial class SharedVendingMachineSystem : EntitySystem
 
         return GetAllInventory(uid, component).Where(_ => _.Amount > 0).ToList();
     }
-
+    //Sunrise-edit-start
     private void AddInventoryFromPrototype(EntityUid uid,
         Dictionary<string, uint>? entries,
         InventoryType type,
@@ -466,4 +466,5 @@ public abstract partial class SharedVendingMachineSystem : EntitySystem
             }
         }
     }
+    //Sunrise-edit-end
 }
