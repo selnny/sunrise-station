@@ -400,71 +400,61 @@ public abstract partial class SharedVendingMachineSystem : EntitySystem
     }
     //Sunrise-edit-start
     private void AddInventoryFromPrototype(EntityUid uid,
-        Dictionary<string, uint>? entries,
-        InventoryType type,
-        VendingMachineComponent? component = null,
-        float restockQuality = 1.0f)
+    Dictionary<string, uint>? entries,
+    InventoryType type,
+    VendingMachineComponent? component = null,
+    float restockQuality = 1.0f)
+{
+    if (!Resolve(uid, ref component) || entries == null)
+        return;
+
+    Dictionary<string, VendingMachineInventoryEntry> inventory = type switch
     {
-        if (!Resolve(uid, ref component) || entries == null)
-        {
-            return;
-        }
+        InventoryType.Regular    => component.Inventory,
+        InventoryType.Emagged    => component.EmaggedInventory,
+        InventoryType.Contraband => component.ContrabandInventory,
+        _ => null!
+    };
+    if (inventory == null)
+        return;
 
-        Dictionary<string, VendingMachineInventoryEntry> inventory;
-        switch (type)
-        {
-            case InventoryType.Regular:
-                inventory = component.Inventory;
-                break;
-            case InventoryType.Emagged:
-                inventory = component.EmaggedInventory;
-                break;
-            case InventoryType.Contraband:
-                inventory = component.ContrabandInventory;
-                break;
-            default:
-                return;
-        }
+    foreach (var (id, amount) in entries)
+    {
+        if (!PrototypeManager.HasIndex<EntityPrototype>(id))
+            continue;
 
-        foreach (var (id, amount) in entries)
+        uint restock = amount;
+
+        if (type == InventoryType.Regular)
         {
-            if (PrototypeManager.HasIndex<EntityPrototype>(id))
+            var chanceOfMissingStock = 1 - restockQuality;
+            var result = Randomizer.NextFloat(0, 1);
+            if (result < chanceOfMissingStock)
+                restock = (uint)Math.Floor(amount * result / chanceOfMissingStock);
+
+            if (TryComp<PlayerCountDependentStockComponent>(uid, out var dependentStockComponent))
             {
-                var restock = amount;
-
-                if (type == InventoryType.Regular)
-                {
-                    var chanceOfMissingStock = 1 - restockQuality;
-                    var result = Randomizer.NextFloat(0, 1);
-                    if (result < chanceOfMissingStock)
-                    {
-                        restock = (uint)Math.Floor(amount * result / chanceOfMissingStock);
-                    }
-
-                    if (TryComp<PlayerCountDependentStockComponent>(uid, out var dependentStockComponent))
-                    {
-                        restock = (uint)Math.Floor(
-                            amount + Math.Pow(_player.PlayerCount, 0.8f) * dependentStockComponent.Coefficient);
-                    }
-
-
-                    restock = Math.Max(restock, 2);
-                }
-                else
-                {
-                    restock = 2;
-                }
-
-                if (inventory.TryGetValue(id, out var entry))
-                {
-                    entry.Amount = Math.Min(entry.Amount + restock, 3 * restock);
-                }
-                else
-                {
-                    inventory.Add(id, new VendingMachineInventoryEntry(type, id, restock));
-                }
+                restock = (uint)Math.Floor(
+                    amount + Math.Pow(_player.PlayerCount, 0.8f) * dependentStockComponent.Coefficient);
             }
+
+            restock = Math.Max(restock, 2);
+        }
+        else
+        {
+            var isSustenance = component.PackPrototypeId == "SustenanceInventory";
+            restock = isSustenance ? 1u : 2u;
+        }
+
+        if (inventory.TryGetValue(id, out var entry))
+        {
+            entry.Amount = Math.Min(entry.Amount + restock, 3 * amount);
+        }
+        else
+        {
+            inventory.Add(id, new VendingMachineInventoryEntry(type, id, restock));
         }
     }
+}
     //Sunrise-edit-end
 }
