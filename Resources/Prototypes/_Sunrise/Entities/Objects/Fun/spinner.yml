@@ -1,0 +1,24 @@
+- type: entity
+  id: SpinnerWheel
+  parent: BaseItem
+  name: spinner wheel
+  description: A roulette-style wheel that you can spin to point in a random direction.
+  save: true
+  components:
+  - type: Sprite
+    sprite: Objects/Tanks/oxygen.rsi
+    state: icon
+  - type: Item
+    size: Small
+    sprite: Objects/Tanks/oxygen.rsi
+  - type: Physics
+    bodyType: Dynamic
+    friction: 0.5
+    restitution: 0.1
+  - type: PlaceableSurface
+  - type: Spinner
+    minSpinSeconds: 1.0
+    maxSpinSeconds: 4.0
+    minDegreesPerSecond: 720.0
+    maxDegreesPerSecond: 2160.0
+    brakeFactor: 0.95
