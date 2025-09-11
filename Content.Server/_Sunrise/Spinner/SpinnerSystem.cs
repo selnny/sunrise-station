@@ -9,7 +9,7 @@ using Robust.Shared.Player;
 using Content.Shared.Verbs;
 using Content.Shared.Interaction.Events;
 using Robust.Shared.Physics.Components;
-using Robust.Shared.Physics; // Добавьте этот using
+using Robust.Shared.Physics;
 
 namespace Content.Server._Sunrise.Spinner
 {
@@ -30,7 +30,7 @@ namespace Content.Server._Sunrise.Spinner
 
         private void OnInit(EntityUid uid, SpinnerComponent comp, ComponentInit args)
         {
-            // ничего дополнительного
+
         }
 
         private void OnShutdown(EntityUid uid, SpinnerComponent comp, ComponentShutdown args)
@@ -45,7 +45,6 @@ namespace Content.Server._Sunrise.Spinner
             if (args.Handled)
                 return;
 
-            // Проверяем, что объект закреплен
             if (!TryComp<PhysicsComponent>(uid, out var physics) || physics.BodyType != BodyType.Static)
                 return;
 
@@ -58,7 +57,6 @@ namespace Content.Server._Sunrise.Spinner
             if (!args.CanAccess || !args.CanInteract)
                 return;
 
-            // Проверяем, что объект закреплен
             if (!TryComp<PhysicsComponent>(uid, out var physics) || physics.BodyType != BodyType.Static)
                 return;
 
@@ -72,7 +70,6 @@ namespace Content.Server._Sunrise.Spinner
 
         private void ToggleSpin(EntityUid uid, SpinnerComponent comp)
         {
-            // Если объект уже крутится — остановим его
             if (comp.IsSpinning)
             {
                 comp.RemainingSeconds = 0f;
@@ -111,7 +108,6 @@ namespace Content.Server._Sunrise.Spinner
                 // вращаем вокруг Z (в 2D)
                 var deltaDeg = comp.CurrentDegPerSec * dt;
 
-                // получаем угол через Degrees
                 var newAngle = xform.LocalRotation.Degrees + deltaDeg;
                 _xform.SetLocalRotation(uid, Angle.FromDegrees(newAngle));
 
