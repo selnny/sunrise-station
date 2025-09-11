@@ -15,6 +15,7 @@
     bodyType: Dynamic
     friction: 0.5
     restitution: 0.1
+  - type: Anchorable
   - type: PlaceableSurface
   - type: Spinner
     minSpinSeconds: 1.0

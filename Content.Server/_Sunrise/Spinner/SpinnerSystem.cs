@@ -6,6 +6,10 @@ using Robust.Shared.GameStates;
 using Robust.Shared.Maths;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Player;
+using Content.Shared.Verbs;
+using Content.Shared.Interaction.Events;
+using Robust.Shared.Physics.Components;
+using Robust.Shared.Physics; // Добавьте этот using
 
 namespace Content.Server._Sunrise.Spinner
 {
@@ -18,7 +22,8 @@ namespace Content.Server._Sunrise.Spinner
         public override void Initialize()
         {
             base.Initialize();
-            SubscribeLocalEvent<SpinnerComponent, AfterInteractEvent>(OnAfterInteract);
+            SubscribeLocalEvent<SpinnerComponent, ActivateInWorldEvent>(OnActivateInWorld);
+            SubscribeLocalEvent<SpinnerComponent, GetVerbsEvent<InteractionVerb>>(AddSpinVerb);
             SubscribeLocalEvent<SpinnerComponent, ComponentInit>(OnInit);
             SubscribeLocalEvent<SpinnerComponent, ComponentShutdown>(OnShutdown);
         }
@@ -35,22 +40,48 @@ namespace Content.Server._Sunrise.Spinner
             comp.CurrentDegPerSec = 0f;
         }
 
-        private void OnAfterInteract(EntityUid uid, SpinnerComponent comp, AfterInteractEvent args)
+        private void OnActivateInWorld(EntityUid uid, SpinnerComponent comp, ActivateInWorldEvent args)
         {
             if (args.Handled)
                 return;
 
-            // Если объект уже крутится — остановим его (уменьшим время до нуля)
+            // Проверяем, что объект закреплен
+            if (!TryComp<PhysicsComponent>(uid, out var physics) || physics.BodyType != BodyType.Static)
+                return;
+
+            ToggleSpin(uid, comp);
+            args.Handled = true;
+        }
+
+        private void AddSpinVerb(EntityUid uid, SpinnerComponent comp, GetVerbsEvent<InteractionVerb> args)
+        {
+            if (!args.CanAccess || !args.CanInteract)
+                return;
+
+            // Проверяем, что объект закреплен
+            if (!TryComp<PhysicsComponent>(uid, out var physics) || physics.BodyType != BodyType.Static)
+                return;
+
+            InteractionVerb verb = new()
+            {
+                Act = () => ToggleSpin(uid, comp),
+                Text = comp.IsSpinning ? "Остановить вращение" : "Крутить",
+            };
+            args.Verbs.Add(verb);
+        }
+
+        private void ToggleSpin(EntityUid uid, SpinnerComponent comp)
+        {
+            // Если объект уже крутится — остановим его
             if (comp.IsSpinning)
             {
                 comp.RemainingSeconds = 0f;
-                args.Handled = true;
+                comp.IsSpinning = false;
                 Dirty(uid, comp);
                 return;
             }
 
             StartSpin(uid, comp);
-            args.Handled = true;
         }
 
         private void StartSpin(EntityUid uid, SpinnerComponent comp)
